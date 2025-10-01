@@ -5984,7 +5984,6 @@ function Library:CreateWindow(WindowInfo)
             end
         end
 
--- function Window:AddTab(...) İÇİNDEKİ function Tab:AddGroupbox(Info) fonksiyonunu bununla değiştirin.
 function Tab:AddGroupbox(Info)
     local isCollapsible = Info.Collapsible or false
     local startCollapsed = Info.StartCollapsed or false
@@ -6012,20 +6011,28 @@ function Tab:AddGroupbox(Info)
     local GroupboxList
 
     do
-        GroupboxHolder = New("TextButton", {
+        local GroupboxContentFrame = New("Frame", {
             BackgroundColor3 = "BackgroundColor",
             Position = UDim2.fromOffset(2, 2),
             Size = UDim2.new(1, -4, 1, -4),
             Parent = Background,
-            AutoButtonColor = false,
-            Text = "",
         })
         New("UICorner", {
             CornerRadius = UDim.new(0, WindowInfo.CornerRadius - 1),
-            Parent = GroupboxHolder,
+            Parent = GroupboxContentFrame,
         })
-        Library:MakeLine(GroupboxHolder, {
-            Position = UDim2.fromOffset(0, 34),
+
+        local HeaderButton = New("TextButton", {
+            BackgroundColor3 = "BackgroundColor",
+            Size = UDim2.new(1, 0, 0, 34),
+            Parent = GroupboxContentFrame,
+            AutoButtonColor = false,
+            Text = "",
+        })
+
+        Library:MakeLine(HeaderButton, {
+            AnchorPoint = Vector2.new(0, 1),
+            Position = UDim2.new(0, 0, 1, 0),
             Size = UDim2.new(1, 0, 0, 1),
         })
 
@@ -6038,18 +6045,18 @@ function Tab:AddGroupbox(Info)
                 ImageRectSize = BoxIcon.ImageRectSize,
                 Position = UDim2.fromOffset(6, 6),
                 Size = UDim2.fromOffset(22, 22),
-                Parent = GroupboxHolder,
+                Parent = HeaderButton,
             })
         end
 
         GroupboxLabel = New("TextLabel", {
             BackgroundTransparency = 1,
-            Position = UDim2.fromOffset(BoxIcon and 24 or 0, 0),
-            Size = UDim2.new(1, 0, 0, 34),
+            Position = UDim2.fromOffset(BoxIcon and 34 or 12, 0),
+            Size = UDim2.new(1, -((BoxIcon and 34 or 12) + (isCollapsible and 34 or 12)), 1, 0),
             Text = Info.Name,
             TextSize = 15,
             TextXAlignment = Enum.TextXAlignment.Left,
-            Parent = GroupboxHolder,
+            Parent = HeaderButton,
         })
         New("UIPadding", {
             PaddingLeft = UDim.new(0, 12),
@@ -6061,7 +6068,7 @@ function Tab:AddGroupbox(Info)
             BackgroundTransparency = 1,
             Position = UDim2.fromOffset(0, 35),
             Size = UDim2.new(1, 0, 1, -35),
-            Parent = GroupboxHolder,
+            Parent = GroupboxContentFrame,
             Visible = not startCollapsed,
             ClipsDescendants = true,
         })
@@ -6077,6 +6084,8 @@ function Tab:AddGroupbox(Info)
             PaddingTop = UDim.new(0, 7),
             Parent = GroupboxContainer,
         })
+        
+        GroupboxHolder = HeaderButton
     end
 
     local Groupbox = {
