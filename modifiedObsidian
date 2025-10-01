@@ -272,7 +272,7 @@ local Templates = {
         Disabled = false,
         Visible = true,
     },
-    Input = {
+Input = {
         Text = "Input",
         Default = "",
         Finished = false,
@@ -281,6 +281,7 @@ local Templates = {
         Placeholder = "",
         AllowEmpty = true,
         EmptyReset = "---",
+        Require = false, 
 
         Callback = function() end,
         Changed = function() end,
@@ -294,6 +295,7 @@ local Templates = {
         Min = 0,
         Max = 100,
         Rounding = 0,
+        Require = false,
 
         Prefix = "",
         Suffix = "",
@@ -304,11 +306,13 @@ local Templates = {
         Disabled = false,
         Visible = true,
     },
+
     Dropdown = {
         Values = {},
         DisabledValues = {},
         Multi = false,
         MaxVisibleDropdownItems = 8,
+        Require = false, 
 
         Callback = function() end,
         Changed = function() end,
@@ -316,6 +320,7 @@ local Templates = {
         Disabled = false,
         Visible = true,
     },
+
     Viewport = {
         Object = nil,
         Camera = nil,
@@ -504,7 +509,7 @@ local function Complebilty()
                 return require(foundModule)
             end)
             
-            return success
+            return false
         end
     end
     
@@ -2822,6 +2827,7 @@ do
                 Info.Risky = Params.Risky or false
                 Info.Disabled = Params.Disabled or false
                 Info.Visible = Params.Visible or true
+                Info.Require = Params.Require or false
                 Info.Idx = typeof(Second) == "table" and First or nil
             else
                 Info.Text = First or ""
@@ -2834,12 +2840,21 @@ do
                 Info.Risky = false
                 Info.Disabled = false
                 Info.Visible = true
+                Info.Require = false
                 Info.Idx = select(3, ...) or nil
             end
 
             return Info
         end
         local Info = GetInfo(...)
+
+        if Info.Require then
+            if not Complebilty() then
+                Info.Disabled = true
+                Info.Tooltip = nil
+                Info.DisabledTooltip = "Your executor doesn't support that feature."
+            end
+        end
 
         local Groupbox = self
         local Container = Groupbox.Container
@@ -3537,6 +3552,14 @@ do
     function Funcs:AddInput(Idx, Info)
         Info = Library:Validate(Info, Templates.Input)
 
+        if Info.Require then
+            if not Complebilty() then
+                Info.Disabled = true
+                Info.Tooltip = nil
+                Info.DisabledTooltip = "Your executor doesn't support that feature."
+            end
+        end
+
         local Groupbox = self
         local Container = Groupbox.Container
 
@@ -3695,6 +3718,14 @@ do
 
     function Funcs:AddSlider(Idx, Info)
         Info = Library:Validate(Info, Templates.Slider)
+
+        if Info.Require then
+            if not Complebilty() then
+                Info.Disabled = true
+                Info.Tooltip = nil
+                Info.DisabledTooltip = "Your executor doesn't support that feature."
+            end
+        end
 
         local Groupbox = self
         local Container = Groupbox.Container
@@ -3952,6 +3983,14 @@ do
 
     function Funcs:AddDropdown(Idx, Info)
         Info = Library:Validate(Info, Templates.Dropdown)
+
+        if Info.Require then
+            if not Complebilty() then
+                Info.Disabled = true
+                Info.Tooltip = nil
+                Info.DisabledTooltip = "Your executor doesn't support that feature."
+            end
+        end
 
         local Groupbox = self
         local Container = Groupbox.Container
