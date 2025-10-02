@@ -5887,22 +5887,27 @@ function Library:CreateWindow(WindowInfo)
         end
 
         --// Tab Table \\--
-        local Tab = {
-            Groupboxes = {},
-            Tabboxes = {},
-            DependencyGroupboxes = {},
-            Sides = {
-                TabLeft,
-                TabRight,
-            },
-            WarningBox = {
-                IsNormal = false,
-                LockSize = false,
-                Visible = false,
-                Title = "WARNING",
-                Text = ""
-            }
-        }
+local Tab = {
+    Name = Name, 
+    _UI = { 
+        Button = TabButton,
+        Container = TabContainer
+    },
+    Groupboxes = {},
+    Tabboxes = {},
+    DependencyGroupboxes = {},
+    Sides = {
+        TabLeft,
+        TabRight,
+    },
+    WarningBox = {
+        IsNormal = false,
+        LockSize = false,
+        Visible = false,
+        Title = "WARNING",
+        Text = ""
+    }
+}
 
         function Tab:UpdateWarningBox(Info)
             if typeof(Info.IsNormal) == "boolean"   then Tab.WarningBox.IsNormal    = Info.IsNormal end
@@ -6426,10 +6431,17 @@ function Library:CreateWindow(WindowInfo)
         end
 
         --// Tab Table \\--
-        local Tab = {
-            Elements = {},
-            IsKeyTab = true,
-        }
+-- ...
+local Tab = {
+    Name = Name, -- YENİ EKLENDİ
+    _UI = { -- YENİ EKLENDİ
+        Button = TabButton,
+        Container = TabContainer
+    },
+    Elements = {},
+    IsKeyTab = true,
+}
+-- ...
 
         function Tab:AddKeyBox(...)
             local Data = {}
@@ -6570,6 +6582,34 @@ function Library:CreateWindow(WindowInfo)
         TabToSelect:Show()
     end
 
+    function Window:RemoveTab(TabToRemove)
+
+        if not (TabToRemove and TabToRemove._UI and TabToRemove._UI.Button) then
+            return
+        end
+
+        local wasActive = (Library.ActiveTab == TabToRemove)
+
+        TabToRemove._UI.Button:Destroy()
+        TabToRemove._UI.Container:Destroy()
+
+        Library.Tabs[TabToRemove.Name] = nil
+
+        if wasActive then
+            Library.ActiveTab = nil
+
+            local _, nextTab = next(Library.Tabs)
+            if nextTab then
+                nextTab:Show()
+            else
+
+                CurrentTabInfo.Visible = false
+                CurrentTabLabel.Text = ""
+                CurrentTabDescription.Text = ""
+            end
+        end
+    end
+
     function Library:Toggle(Value: boolean?)
         if typeof(Value) == "boolean" then
             Library.Toggled = Value
@@ -6696,4 +6736,3 @@ Library:GiveSignal(Teams.ChildRemoved:Connect(OnTeamChange))
 
 getgenv().Library = Library
 return Library
-
