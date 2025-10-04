@@ -49,6 +49,7 @@ NotificationArea.Parent = ScreenGui
 
 local NotificationList = Instance.new("UIListLayout")
 NotificationList.HorizontalAlignment = Enum.HorizontalAlignment.Right
+NotificationList.VerticalAlignment = Enum.VerticalAlignment.Top
 NotificationList.Padding = UDim.new(0, 6)
 NotificationList.SortOrder = Enum.SortOrder.LayoutOrder
 NotificationList.Parent = NotificationArea
@@ -66,14 +67,28 @@ end
 
 function NotifModule:SetNotifySide(Side)
     NotifModule.NotifySide = Side
-    if Side:lower() == "left" then
+    local sideLower = Side:lower()
+    
+    if sideLower == "left" then
         NotificationArea.AnchorPoint = Vector2.new(0, 0)
         NotificationArea.Position = UDim2.fromOffset(6, 6)
         NotificationList.HorizontalAlignment = Enum.HorizontalAlignment.Left
+        NotificationList.VerticalAlignment = Enum.VerticalAlignment.Top
+    elseif sideLower == "lbottom" then
+        NotificationArea.AnchorPoint = Vector2.new(0, 1)
+        NotificationArea.Position = UDim2.new(0, 6, 1, -20)
+        NotificationList.HorizontalAlignment = Enum.HorizontalAlignment.Left
+        NotificationList.VerticalAlignment = Enum.VerticalAlignment.Bottom
+    elseif sideLower == "rbottom" then
+        NotificationArea.AnchorPoint = Vector2.new(1, 1)
+        NotificationArea.Position = UDim2.new(1, -6, 1, -20)
+        NotificationList.HorizontalAlignment = Enum.HorizontalAlignment.Right
+        NotificationList.VerticalAlignment = Enum.VerticalAlignment.Bottom
     else
         NotificationArea.AnchorPoint = Vector2.new(1, 0)
         NotificationArea.Position = UDim2.new(1, -6, 0, 6)
         NotificationList.HorizontalAlignment = Enum.HorizontalAlignment.Right
+        NotificationList.VerticalAlignment = Enum.VerticalAlignment.Top
     end
 end
 
@@ -105,7 +120,7 @@ function NotifModule:Notify(Title, Description, Time, Side, ColorName)
     Background.AutomaticSize = Enum.AutomaticSize.Y
     Background.BackgroundColor3 = NotifModule.Scheme.Dark
     Background.BorderSizePixel = 0
-    Background.Position = Side:lower() == "left" and UDim2.new(-1, -6, 0, -2) or UDim2.new(1, 6, 0, -2)
+    Background.Position = Side:lower() == "left" or Side:lower() == "lbottom" and UDim2.new(-1, -6, 0, -2) or UDim2.new(1, 6, 0, -2)
     Background.Size = UDim2.fromScale(1, 0)
     Background.Parent = FakeBackground
     
@@ -191,8 +206,9 @@ function NotifModule:Notify(Title, Description, Time, Side, ColorName)
 
     function Data:Destroy()
         Data.Destroyed = true
+        local isLeftSide = Side:lower() == "left" or Side:lower() == "lbottom"
         TweenService:Create(Background, NotifModule.NotifyTweenInfo, {
-            Position = Side:lower() == "left" and UDim2.new(-1, -6, 0, -2) or UDim2.new(1, 6, 0, -2)
+            Position = isLeftSide and UDim2.new(-1, -6, 0, -2) or UDim2.new(1, 6, 0, -2)
         }):Play()
         task.delay(NotifModule.NotifyTweenInfo.Time, function()
             NotifModule.Notifications[FakeBackground] = nil
@@ -216,5 +232,4 @@ function NotifModule:Notify(Title, Description, Time, Side, ColorName)
     
     return Data
 end
-
 return NotifModule
