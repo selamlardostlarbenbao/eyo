@@ -1,0 +1,220 @@
+local cloneref = (cloneref or clonereference or function(instance: any)
+    return instance
+end)
+local CoreGui = cloneref(game:GetService("CoreGui"))
+local TweenService = cloneref(game:GetService("TweenService"))
+local TextService = cloneref(game:GetService("TextService"))
+
+local protectgui = protectgui or (syn and syn.protect_gui) or function() end
+local gethui = gethui or function() return CoreGui end
+
+local NotifModule = {
+    NotifySide = "Right",
+    DPIScale = 1,
+    CornerRadius = 4,
+    Notifications = {},
+    Scheme = {
+        BackgroundColor = Color3.fromRGB(15, 15, 15),
+        MainColor = Color3.fromRGB(25, 25, 25),
+        AccentColor = Color3.fromRGB(125, 85, 255),
+        OutlineColor = Color3.fromRGB(40, 40, 40),
+        FontColor = Color3.new(1, 1, 1),
+        Font = Font.fromEnum(Enum.Font.Code),
+        Dark = Color3.new(0, 0, 0),
+    },
+    NotifyTweenInfo = TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+}
+
+local ColorSchemes = {
+    Purple = Color3.fromRGB(125, 85, 255),
+    Red = Color3.fromRGB(255, 50, 50),
+    Green = Color3.fromRGB(50, 255, 50),
+    Blue = Color3.fromRGB(50, 150, 255),
+    Orange = Color3.fromRGB(255, 150, 50),
+    Yellow = Color3.fromRGB(255, 255, 50),
+}
+
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "ObsidianNotifications"
+ScreenGui.DisplayOrder = 999
+ScreenGui.ResetOnSpawn = false
+pcall(protectgui, ScreenGui)
+pcall(function() ScreenGui.Parent = gethui() end)
+if not ScreenGui.Parent then ScreenGui.Parent = CoreGui end
+
+local NotificationArea = Instance.new("Frame")
+NotificationArea.BackgroundTransparency = 1
+NotificationArea.Size = UDim2.new(0, 300, 1, -6)
+NotificationArea.Parent = ScreenGui
+
+local NotificationList = Instance.new("UIListLayout")
+NotificationList.HorizontalAlignment = Enum.HorizontalAlignment.Right
+NotificationList.Padding = UDim.new(0, 6)
+NotificationList.SortOrder = Enum.SortOrder.LayoutOrder
+NotificationList.Parent = NotificationArea
+
+local function GetTextBounds(Text, Font, Size, Width)
+    local Params = Instance.new("GetTextBoundsParams")
+    Params.Text = Text
+    Params.RichText = true
+    Params.Font = Font
+    Params.Size = Size
+    Params.Width = Width or 276
+    local Bounds = TextService:GetTextBoundsAsync(Params)
+    return Bounds.X, Bounds.Y
+end
+
+function NotifModule:SetNotifySide(Side)
+    NotifModule.NotifySide = Side
+    if Side:lower() == "left" then
+        NotificationArea.AnchorPoint = Vector2.new(0, 0)
+        NotificationArea.Position = UDim2.fromOffset(6, 6)
+        NotificationList.HorizontalAlignment = Enum.HorizontalAlignment.Left
+    else
+        NotificationArea.AnchorPoint = Vector2.new(1, 0)
+        NotificationArea.Position = UDim2.new(1, -6, 0, 6)
+        NotificationList.HorizontalAlignment = Enum.HorizontalAlignment.Right
+    end
+end
+
+NotifModule:SetNotifySide("Right")
+
+function NotifModule:Notify(Title, Description, Time, Side, ColorName)
+    Title = tostring(Title or "Notification")
+    Description = tostring(Description or "")
+    Time = tonumber(Time) or 5
+    Side = tostring(Side or "Right")
+    ColorName = tostring(ColorName or "Purple")
+    
+    local AccentColor = ColorSchemes[ColorName] or ColorSchemes.Purple
+    
+    if Side:lower() ~= NotifModule.NotifySide:lower() then
+        NotifModule:SetNotifySide(Side)
+    end
+    
+    local Data = { Title = Title, Description = Description, Time = Time, Destroyed = false }
+    
+    local FakeBackground = Instance.new("Frame")
+    FakeBackground.AutomaticSize = Enum.AutomaticSize.Y
+    FakeBackground.BackgroundTransparency = 1
+    FakeBackground.Size = UDim2.fromScale(1, 0)
+    FakeBackground.Visible = false
+    FakeBackground.Parent = NotificationArea
+    
+    local Background = Instance.new("Frame")
+    Background.AutomaticSize = Enum.AutomaticSize.Y
+    Background.BackgroundColor3 = NotifModule.Scheme.Dark
+    Background.BorderSizePixel = 0
+    Background.Position = Side:lower() == "left" and UDim2.new(-1, -6, 0, -2) or UDim2.new(1, 6, 0, -2)
+    Background.Size = UDim2.fromScale(1, 0)
+    Background.Parent = FakeBackground
+    
+    Instance.new("UICorner", Background).CornerRadius = UDim.new(0, NotifModule.CornerRadius + 1)
+    
+    local Outline = Instance.new("Frame", Background)
+    Outline.AutomaticSize = Enum.AutomaticSize.Y
+    Outline.BackgroundColor3 = NotifModule.Scheme.OutlineColor
+    Outline.BorderSizePixel = 0
+    Outline.Position = UDim2.fromOffset(1, 1)
+    Outline.Size = UDim2.new(1, -2, 1, -2)
+    Instance.new("UICorner", Outline).CornerRadius = UDim.new(0, NotifModule.CornerRadius)
+    
+    local Holder = Instance.new("Frame", Outline)
+    Holder.AutomaticSize = Enum.AutomaticSize.Y
+    Holder.BackgroundColor3 = NotifModule.Scheme.MainColor
+    Holder.BorderSizePixel = 0
+    Holder.Position = UDim2.fromOffset(1, 1)
+    Holder.Size = UDim2.new(1, -2, 1, -2)
+    Instance.new("UICorner", Holder).CornerRadius = UDim.new(0, NotifModule.CornerRadius - 1)
+    local ListLayout = Instance.new("UIListLayout", Holder)
+	ListLayout.VerticalAlignment = Enum.VerticalAlignment.Top
+	ListLayout.Padding = UDim.new(0, 4)
+	
+    local Padding = Instance.new("UIPadding", Holder)
+    Padding.PaddingBottom = UDim.new(0, 15)
+    Padding.PaddingLeft = UDim.new(0, 8)
+    Padding.PaddingRight = UDim.new(0, 8)
+    Padding.PaddingTop = UDim.new(0, -10)
+    
+    local TitleLabel = Instance.new("TextLabel", Holder)
+    TitleLabel.BackgroundTransparency = 1
+    TitleLabel.Font = Enum.Font.FredokaOne
+    TitleLabel.Text = Title
+    TitleLabel.TextColor3 = NotifModule.Scheme.FontColor
+    TitleLabel.TextSize = 15
+    TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+    TitleLabel.TextWrapped = true
+    TitleLabel.RichText = true
+    
+    local DescLabel = Instance.new("TextLabel", Holder)
+    DescLabel.BackgroundTransparency = 1
+    DescLabel.Font = Enum.Font.FredokaOne
+    DescLabel.Text = Description
+    DescLabel.TextColor3 = NotifModule.Scheme.FontColor
+    DescLabel.TextSize = 14
+    DescLabel.TextXAlignment = Enum.TextXAlignment.Left
+    DescLabel.TextWrapped = true
+    DescLabel.RichText = true
+    
+	local TimerSpacer = Instance.new("Frame", Holder)
+	TimerSpacer.BackgroundTransparency = 1
+	TimerSpacer.Size = UDim2.new(1, 0, 0, 12)
+	TimerSpacer.LayoutOrder = 2
+
+    function Data:Resize()
+        local MaxWidth = NotificationArea.AbsoluteSize.X - 24
+        local TitleX, TitleY = GetTextBounds(Title, NotifModule.Scheme.Font, 15, MaxWidth)
+        TitleLabel.Size = UDim2.fromOffset(math.ceil(TitleX), TitleY)
+        local DescX, DescY = GetTextBounds(Description, NotifModule.Scheme.Font, 14, MaxWidth)
+        DescLabel.Size = UDim2.fromOffset(math.ceil(DescX), DescY)
+        FakeBackground.Size = UDim2.fromOffset(math.max(TitleX, DescX) + 24, 0)
+    end
+    
+    Data:Resize()
+    
+	local TimerHolder = Instance.new("Frame", Background)
+	TimerHolder.BackgroundTransparency = 1
+	TimerHolder.AnchorPoint = Vector2.new(0.5, 1)
+	TimerHolder.Position = UDim2.new(0.5, 0, 1, -5)
+	TimerHolder.Size = UDim2.new(1, -20, 0, 2)
+	
+	local TimerBar = Instance.new("Frame", TimerHolder)
+	TimerBar.BackgroundColor3 = NotifModule.Scheme.BackgroundColor
+	TimerBar.BorderColor3 = NotifModule.Scheme.OutlineColor
+	TimerBar.BorderSizePixel = 1
+	TimerBar.Size = UDim2.new(1, 0, 1, 0)
+	
+	local TimerFill = Instance.new("Frame", TimerBar)
+	TimerFill.BackgroundColor3 = AccentColor
+	TimerFill.BorderSizePixel = 0
+	TimerFill.Size = UDim2.fromScale(1, 1)
+
+    function Data:Destroy()
+        Data.Destroyed = true
+        TweenService:Create(Background, NotifModule.NotifyTweenInfo, {
+            Position = Side:lower() == "left" and UDim2.new(-1, -6, 0, -2) or UDim2.new(1, 6, 0, -2)
+        }):Play()
+        task.delay(NotifModule.NotifyTweenInfo.Time, function()
+            NotifModule.Notifications[FakeBackground] = nil
+            FakeBackground:Destroy()
+        end)
+    end
+    
+    NotifModule.Notifications[FakeBackground] = Data
+    FakeBackground.Visible = true
+    TweenService:Create(Background, NotifModule.NotifyTweenInfo, {
+        Position = UDim2.fromOffset(-2, -2)
+    }):Play()
+    
+    task.delay(NotifModule.NotifyTweenInfo.Time, function()
+        TweenService:Create(TimerFill, TweenInfo.new(Time, Enum.EasingStyle.Linear), {
+            Size = UDim2.fromScale(0, 1)
+        }):Play()
+        task.wait(Time)
+        if not Data.Destroyed then Data:Destroy() end
+    end)
+    
+    return Data
+end
+
+return NotifModule
