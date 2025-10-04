@@ -1,6 +1,4 @@
 local CoreGui = game:GetService("CoreGui")
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 local TextService = game:GetService("TextService")
 
@@ -17,11 +15,18 @@ NotifModule.NotifyTweenInfo = TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.Ea
 NotifModule.Scheme = {
     BackgroundColor = Color3.fromRGB(15, 15, 15),
     MainColor = Color3.fromRGB(25, 25, 25),
-    AccentColor = Color3.fromRGB(125, 85, 255),
     OutlineColor = Color3.fromRGB(40, 40, 40),
     FontColor = Color3.new(1, 1, 1),
     Font = Font.fromEnum(Enum.Font.Code),
     Dark = Color3.new(0, 0, 0),
+    
+    -- Renkler
+    Purple = Color3.fromRGB(125, 85, 255),
+    Blue = Color3.fromRGB(85, 170, 255),
+    Green = Color3.fromRGB(85, 255, 127),
+    Red = Color3.fromRGB(255, 85, 85),
+    Orange = Color3.fromRGB(255, 170, 85),
+    Yellow = Color3.fromRGB(255, 255, 85),
 }
 
 NotifModule.Registry = {}
@@ -73,10 +78,7 @@ if not ScreenGui.Parent then
     ScreenGui.Parent = CoreGui
 end
 
-local NotificationArea
-local NotificationList
-
-NotificationArea = New("Frame", {
+local NotificationArea = New("Frame", {
     AnchorPoint = Vector2.new(1, 0),
     BackgroundTransparency = 1,
     Position = UDim2.new(1, -6, 0, 6),
@@ -84,7 +86,7 @@ NotificationArea = New("Frame", {
     Parent = ScreenGui,
 })
 
-NotificationList = New("UIListLayout", {
+local NotificationList = New("UIListLayout", {
     HorizontalAlignment = Enum.HorizontalAlignment.Right,
     Padding = UDim.new(0, 6),
     SortOrder = Enum.SortOrder.LayoutOrder,
@@ -146,14 +148,19 @@ function NotifModule:SetNotifySide(Side)
     end
 end
 
-function NotifModule:Notify(Description, Time, Side)
+function NotifModule:Notify(Title, Description, Time, Side, Color)
+    Title = tostring(Title or "Notification")
     Description = tostring(Description or "")
     Time = Time or 5
     Side = Side or "Right"
+    Color = Color or "Purple"
+    
+    local AccentColor = self.Scheme[Color] or self.Scheme.Purple
     
     self:SetNotifySide(Side)
     
     local Data = {
+        Title = Title,
         Description = Description,
         Time = Time,
         Destroyed = false,
@@ -198,27 +205,52 @@ function NotifModule:Notify(Description, Time, Side)
         Parent = Holder,
     })
 
-    local Desc = New("TextLabel", {
+    -- Title
+    local TitleLabel = New("TextLabel", {
         BackgroundTransparency = 1,
-        Text = Description,
-        TextSize = 14,
-        Font = Enum.Font.Code,
+        Text = Title,
+        TextSize = 15,
+        Font = Enum.Font.GothamBold,
         TextColor3 = Color3.new(1, 1, 1),
         TextXAlignment = Enum.TextXAlignment.Left,
         TextWrapped = true,
         Parent = Holder,
     })
 
-    local DescX, DescY = GetTextBounds(
-        Desc.Text,
-        Desc.FontFace,
-        Desc.TextSize,
+    -- Description
+    local DescLabel = New("TextLabel", {
+        BackgroundTransparency = 1,
+        Text = Description,
+        TextSize = 14,
+        Font = Enum.Font.Gotham,
+        TextColor3 = Color3.new(1, 1, 1),
+        TextTransparency = 0.3,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        TextWrapped = true,
+        Parent = Holder,
+    })
+
+    local TitleX, TitleY = GetTextBounds(
+        TitleLabel.Text,
+        TitleLabel.FontFace,
+        TitleLabel.TextSize,
         NotificationArea.AbsoluteSize.X - 24
     )
     
-    Desc.Size = UDim2.fromOffset(math.ceil(DescX), DescY)
-    FakeBackground.Size = UDim2.fromOffset(DescX + 24, 0)
+    local DescX, DescY = GetTextBounds(
+        DescLabel.Text,
+        DescLabel.FontFace,
+        DescLabel.TextSize,
+        NotificationArea.AbsoluteSize.X - 24
+    )
+    
+    TitleLabel.Size = UDim2.fromOffset(math.ceil(TitleX), TitleY)
+    DescLabel.Size = UDim2.fromOffset(math.ceil(DescX), DescY)
+    
+    local MaxWidth = math.max(TitleX, DescX)
+    FakeBackground.Size = UDim2.fromOffset(MaxWidth + 24, 0)
 
+    -- Timer
     local TimerHolder = New("Frame", {
         BackgroundTransparency = 1,
         Size = UDim2.new(1, 0, 0, 7),
@@ -235,7 +267,7 @@ function NotifModule:Notify(Description, Time, Side)
     })
     
     local TimerFill = New("Frame", {
-        BackgroundColor3 = "AccentColor",
+        BackgroundColor3 = AccentColor,
         Size = UDim2.fromScale(1, 1),
         Parent = TimerBar,
     })
