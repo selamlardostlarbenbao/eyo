@@ -1,0 +1,360 @@
+local cloneref = (cloneref or clonereference or function(instance: any) return instance end)
+local httpService = cloneref(game:GetService("HttpService"))
+local isfolder, isfile, listfiles = isfolder, isfile, listfiles
+
+if typeof(copyfunction) == "function" then
+    local isfolder_copy, isfile_copy, listfiles_copy = 
+        copyfunction(isfolder), copyfunction(isfile), copyfunction(listfiles)
+
+    local isfolder_success, isfolder_error = pcall(function()
+        return isfolder_copy("test" .. tostring(math.random(1000000, 9999999)))
+    end)
+
+    if isfolder_success == false or typeof(isfolder_error) ~= "boolean" then
+        isfolder = function(folder)
+            local success, data = pcall(isfolder_copy, folder)
+            return (if success then data else false)
+        end
+
+        isfile = function(file)
+            local success, data = pcall(isfile_copy, file)
+            return (if success then data else false)
+        end
+
+        listfiles = function(folder)
+            local success, data = pcall(listfiles_copy, folder)
+            return (if success then data else {})
+        end
+    end
+end
+
+local LoadstringManager = {} do
+    LoadstringManager.Folder = "ObsidianLibSettings"
+    LoadstringManager.SubFolder = ""
+    LoadstringManager.Library = nil
+    LoadstringManager.ScriptsFile = "saved_scripts.json"
+
+    function LoadstringManager:SetLibrary(library)
+        self.Library = library
+    end
+
+    --// Folders \\--
+    function LoadstringManager:CheckSubFolder(createFolder)
+        if typeof(self.SubFolder) ~= "string" or self.SubFolder == "" then return false end
+
+        if createFolder == true then
+            if not isfolder(self.Folder .. "/scripts/" .. self.SubFolder) then
+                makefolder(self.Folder .. "/scripts/" .. self.SubFolder)
+            end
+        end
+
+        return true
+    end
+
+    function LoadstringManager:GetPaths()
+        local paths = {}
+
+        local parts = self.Folder:split("/")
+        for idx = 1, #parts do
+            local path = table.concat(parts, "/", 1, idx)
+            if not table.find(paths, path) then paths[#paths + 1] = path end
+        end
+
+        paths[#paths + 1] = self.Folder .. "/scripts"
+
+        if self:CheckSubFolder(false) then
+            local subFolder = self.Folder .. "/scripts/" .. self.SubFolder
+            parts = subFolder:split("/")
+
+            for idx = 1, #parts do
+                local path = table.concat(parts, "/", 1, idx)
+                if not table.find(paths, path) then paths[#paths + 1] = path end
+            end
+        end
+
+        return paths
+    end
+
+    function LoadstringManager:BuildFolderTree()
+        local paths = self:GetPaths()
+
+        for i = 1, #paths do
+            local str = paths[i]
+            if isfolder(str) then continue end
+            makefolder(str)
+        end
+    end
+
+    function LoadstringManager:CheckFolderTree()
+        if isfolder(self.Folder) then return end
+        LoadstringManager:BuildFolderTree()
+        task.wait(0.1)
+    end
+
+    function LoadstringManager:SetFolder(folder)
+        self.Folder = folder
+        self:BuildFolderTree()
+    end
+
+    function LoadstringManager:SetSubFolder(folder)
+        self.SubFolder = folder
+        self:BuildFolderTree()
+    end
+
+    --// Get Scripts File Path \\--
+    function LoadstringManager:GetScriptsFilePath()
+        local fullPath = self.Folder .. "/scripts/" .. self.ScriptsFile
+        if LoadstringManager:CheckSubFolder(true) then
+            fullPath = self.Folder .. "/scripts/" .. self.SubFolder .. "/" .. self.ScriptsFile
+        end
+        return fullPath
+    end
+
+    --// Load All Scripts \\--
+    function LoadstringManager:LoadScripts()
+        LoadstringManager:CheckFolderTree()
+        local filePath = self:GetScriptsFilePath()
+
+        if not isfile(filePath) then
+            return {}
+        end
+
+        local success, decoded = pcall(httpService.JSONDecode, httpService, readfile(filePath))
+        if not success then
+            return {}
+        end
+
+        return decoded or {}
+    end
+
+    --// Save All Scripts \\--
+    function LoadstringManager:SaveScripts(scripts)
+        LoadstringManager:CheckFolderTree()
+        local filePath = self:GetScriptsFilePath()
+
+        local success, encoded = pcall(httpService.JSONEncode, httpService, scripts)
+        if not success then
+            return false, "failed to encode data"
+        end
+
+        writefile(filePath, encoded)
+        return true
+    end
+
+    --// Add Script \\--
+    function LoadstringManager:AddScript(name, url)
+        if not name or name:gsub(" ", "") == "" then
+            return false, "invalid script name (empty)"
+        end
+
+        if not url or url:gsub(" ", "") == "" then
+            return false, "invalid url (empty)"
+        end
+
+        if not url:match("^https?://") then
+            return false, "url must start with http:// or https://"
+        end
+
+        local scripts = self:LoadScripts()
+
+        -- Check if name already exists
+        for _, script in pairs(scripts) do
+            if script.name == name then
+                return false, "script with this name already exists"
+            end
+        end
+
+        table.insert(scripts, {
+            name = name,
+            url = url
+        })
+
+        local success, err = self:SaveScripts(scripts)
+        if not success then
+            return false, err
+        end
+
+        return true
+    end
+
+    --// Delete Script \\--
+    function LoadstringManager:DeleteScript(name)
+        if not name then
+            return false, "no script selected"
+        end
+
+        local scripts = self:LoadScripts()
+        local newScripts = {}
+        local found = false
+
+        for _, script in pairs(scripts) do
+            if script.name ~= name then
+                table.insert(newScripts, script)
+            else
+                found = true
+            end
+        end
+
+        if not found then
+            return false, "script not found"
+        end
+
+        local success, err = self:SaveScripts(newScripts)
+        if not success then
+            return false, err
+        end
+
+        return true
+    end
+
+    --// Get Script URL \\--
+    function LoadstringManager:GetScriptURL(name)
+        if not name then
+            return nil
+        end
+
+        local scripts = self:LoadScripts()
+        for _, script in pairs(scripts) do
+            if script.name == name then
+                return script.url
+            end
+        end
+
+        return nil
+    end
+
+    --// Load Script \\--
+    function LoadstringManager:LoadScript(name)
+        if not name then
+            return false, "no script selected"
+        end
+
+        local url = self:GetScriptURL(name)
+        if not url then
+            return false, "script not found"
+        end
+
+        local success, err = pcall(function()
+            loadstring(game:HttpGet(url))()
+        end)
+
+        if not success then
+            return false, "failed to load script: " .. tostring(err)
+        end
+
+        return true
+    end
+
+    --// Get Script Names \\--
+    function LoadstringManager:GetScriptNames()
+        local scripts = self:LoadScripts()
+        local names = {}
+
+        for _, script in pairs(scripts) do
+            table.insert(names, script.name)
+        end
+
+        return names
+    end
+
+    --// GUI \\--
+    function LoadstringManager:BuildScriptSection(tab)
+        assert(self.Library, "Must set LoadstringManager.Library")
+
+        local section = tab:AddRightGroupbox("Loadstring Manager", "code")
+
+        section:AddInput("LoadstringManager_ScriptName", { Text = "Script name" })
+        section:AddInput("LoadstringManager_ScriptURL", { Text = "Script URL (https://...)" })
+        
+        section:AddButton("Save script", function()
+            local name = self.Library.Options.LoadstringManager_ScriptName.Value
+            local url = self.Library.Options.LoadstringManager_ScriptURL.Value
+
+            local success, err = self:AddScript(name, url)
+            if not success then
+                return self.Library:Notify("Failed to save script: " .. err, 3)
+            end
+
+            self.Library:Notify(string.format("Saved script %q", name), 3)
+
+            -- Refresh the list
+            self.Library.Options.LoadstringManager_ScriptList:SetValues(self:GetScriptNames())
+            self.Library.Options.LoadstringManager_ScriptList:SetValue(nil)
+            
+            -- Clear inputs
+            self.Library.Options.LoadstringManager_ScriptName:SetValue("")
+            self.Library.Options.LoadstringManager_ScriptURL:SetValue("")
+        end)
+
+        section:AddDivider()
+
+        section:AddDropdown("LoadstringManager_ScriptList", { 
+            Text = "Saved scripts", 
+            Values = self:GetScriptNames(), 
+            AllowNull = true 
+        })
+
+        section:AddButton("Load script", function()
+            local name = self.Library.Options.LoadstringManager_ScriptList.Value
+
+            if not name then
+                return self.Library:Notify("Please select a script", 2)
+            end
+
+            local success, err = self:LoadScript(name)
+            if not success then
+                return self.Library:Notify(err, 3)
+            end
+
+            self.Library:Notify(string.format("Loaded script %q", name), 3)
+        end)
+
+        section:AddButton("Delete script", function()
+            local name = self.Library.Options.LoadstringManager_ScriptList.Value
+
+            if not name then
+                return self.Library:Notify("Please select a script", 2)
+            end
+
+            local success, err = self:DeleteScript(name)
+            if not success then
+                return self.Library:Notify("Failed to delete script: " .. err, 3)
+            end
+
+            self.Library:Notify(string.format("Deleted script %q", name), 3)
+
+            -- Refresh the list
+            self.Library.Options.LoadstringManager_ScriptList:SetValues(self:GetScriptNames())
+            self.Library.Options.LoadstringManager_ScriptList:SetValue(nil)
+        end)
+
+        section:AddButton("Refresh list", function()
+            self.Library.Options.LoadstringManager_ScriptList:SetValues(self:GetScriptNames())
+            self.Library.Options.LoadstringManager_ScriptList:SetValue(nil)
+            self.Library:Notify("Refreshed script list", 2)
+        end)
+
+        section:AddDivider()
+
+        section:AddButton("Show selected URL", function()
+            local name = self.Library.Options.LoadstringManager_ScriptList.Value
+            
+            if not name then
+                return self.Library:Notify("Please select a script", 2)
+            end
+
+            local url = self:GetScriptURL(name)
+            if url then
+                self.Library:Notify("URL: " .. url, 5)
+                if setclipboard then
+                    setclipboard(url)
+                    self.Library:Notify("URL copied to clipboard!", 2)
+                end
+            end
+        end)
+    end
+
+    LoadstringManager:BuildFolderTree()
+end
+
+return LoadstringManager
