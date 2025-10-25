@@ -291,6 +291,7 @@ local LoadstringManager = {} do
         section:AddDropdown("LoadstringManager_ScriptList", { 
             Text = "Saved scripts", 
             Values = self:GetScriptNames(), 
+            Searchable = true,
             AllowNull = true 
         })
 
