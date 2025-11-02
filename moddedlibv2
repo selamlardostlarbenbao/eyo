@@ -5640,7 +5640,7 @@ function Library:CreateWindow(WindowInfo)
 	end
 if Title == "GameName" then
 	local success, result = pcall(function()
-		return MarketplaceService:GetProductInfo(game.PlaceId)
+		return  game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId)
 	end)
 	if success and result and result.Name then
 		Title = result.Name
