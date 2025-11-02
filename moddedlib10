@@ -5640,7 +5640,7 @@ function Library:CreateWindow(WindowInfo)
 	end
 if Title == "GameName" then
 	local success, result = pcall(function()
-		return game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId)
+		return MarketplaceService:GetProductInfo(game.PlaceId)
 	end)
 	if success and result and result.Name then
 		Title = result.Name
@@ -5700,31 +5700,35 @@ end
 		ImageCorner.CornerRadius = UDim.new(0, 15)
 		ImageCorner.Parent = ImageLabel
 		
-		local TitleLabel = Instance.new("TextLabel")
-		TitleLabel.Name = "Title"
-		TitleLabel.Size = UDim2.new(0.9, 0, 0, 30)
-		TitleLabel.Position = UDim2.new(0.5, 0, 0.6, 0)
-		TitleLabel.AnchorPoint = Vector2.new(0.5, 0)
-		TitleLabel.BackgroundTransparency = 1
-		TitleLabel.Font = Enum.Font.GothamBold
-		TitleLabel.Text = Title
-		TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-		TitleLabel.TextSize = 24
-		TitleLabel.TextTransparency = 1
-		TitleLabel.Parent = MainLoadingFrame
-		
-		local Subtitle = Instance.new("TextLabel")
-		Subtitle.Name = "Subtitle"
-		Subtitle.Size = UDim2.new(0.9, 0, 0, 20)
-		Subtitle.Position = UDim2.new(0.5, 0, 0.68, 0)
-		Subtitle.AnchorPoint = Vector2.new(0.5, 0)
-		Subtitle.BackgroundTransparency = 1
-		Subtitle.Font = Enum.Font.Gotham
-		Subtitle.Text = Description
-		Subtitle.TextColor3 = Color3.fromRGB(180, 180, 180)
-		Subtitle.TextSize = 14
-		Subtitle.TextTransparency = 1
-		Subtitle.Parent = MainLoadingFrame
+local TitleLabel = Instance.new("TextLabel")
+TitleLabel.Name = "Title"
+TitleLabel.Size = UDim2.new(0.9, 0, 0, 50) 
+TitleLabel.Position = UDim2.new(0.5, 0, 0.6, 0)
+TitleLabel.AnchorPoint = Vector2.new(0.5, 0)
+TitleLabel.BackgroundTransparency = 1
+TitleLabel.Font = Enum.Font.GothamBold
+TitleLabel.Text = Title
+TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+TitleLabel.TextSize = 24
+TitleLabel.TextTransparency = 1
+TitleLabel.TextWrapped = true 
+TitleLabel.TextYAlignment = Enum.TextYAlignment.Top 
+TitleLabel.Parent = MainLoadingFrame
+
+local Subtitle = Instance.new("TextLabel")
+Subtitle.Name = "Subtitle"
+Subtitle.Size = UDim2.new(0.9, 0, 0, 40) 
+Subtitle.Position = UDim2.new(0.5, 0, 0.72, 0) 
+Subtitle.AnchorPoint = Vector2.new(0.5, 0)
+Subtitle.BackgroundTransparency = 1
+Subtitle.Font = Enum.Font.Gotham
+Subtitle.Text = Description
+Subtitle.TextColor3 = Color3.fromRGB(180, 180, 180)
+Subtitle.TextSize = 14
+Subtitle.TextTransparency = 1
+Subtitle.TextWrapped = true -- EKLE
+Subtitle.TextYAlignment = Enum.TextYAlignment.Top 
+Subtitle.Parent = MainLoadingFrame
 		
 		local ProgressBG = Instance.new("Frame")
 		ProgressBG.Name = "ProgressBG"
